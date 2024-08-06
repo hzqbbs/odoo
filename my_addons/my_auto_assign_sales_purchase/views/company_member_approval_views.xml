@@ -1,0 +1,47 @@
+<odoo>
+    <data>
+        <!-- Define the tree view -->
+        <record id="view_company_member_approval_tree" model="ir.ui.view">
+            <field name="name">company.member.approval.tree</field>
+            <field name="model">company.member.approval</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="user_id"/>
+                    <field name="company_id"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- Define the form view -->
+        <record id="view_company_member_approval_form" model="ir.ui.view">
+            <field name="name">company.member.approval.form</field>
+            <field name="model">company.member.approval</field>
+            <field name="arch" type="xml">
+                <form>
+                    <group>
+                        <field name="user_id"/>
+                        <field name="company_id"/>
+                        <field name="state"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+
+        <!-- Define the action -->
+        <record id="action_company_member_approval" model="ir.actions.act_window">
+            <field name="name">Member Approvals</field>
+            <field name="res_model">company.member.approval</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_id" ref="view_company_member_approval_tree"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create the first Member Approval
+                </p>
+            </field>
+        </record>
+
+        <!-- Define the menu item -->
+        <menuitem id="menu_company_member_approval" name="Member Approvals" parent="base.menu_administration" action="action_company_member_approval"/>
+    </data>
+</odoo>
