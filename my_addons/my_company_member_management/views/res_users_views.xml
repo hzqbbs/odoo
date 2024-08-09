@@ -75,7 +75,7 @@
     <menuitem id="menu_action_users_custom" name="Users"
               parent="base.menu_administration"
               action="action_users_custom_server"
-              groups="my_auto_assign_sales_purchase.group_company_admin"
+              groups="my_company_member_management.group_company_admin"
     />
 
     <menuitem id="menu_settings" name="Settings" sequence="0" groups="base.group_system"/>

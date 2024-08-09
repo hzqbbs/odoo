@@ -1,3 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_company_member_approval_admin,company.member.approval.admin,model_company_member_approval,my_auto_assign_sales_purchase.group_company_admin,1,1,1,1
+access_company_member_approval_admin,company.member.approval.admin,model_company_member_approval,my_company_member_management.group_company_admin,1,1,1,1
 access_company_member_approval_user,company.member.approval.user,model_company_member_approval,base.group_user,1,0,1,0

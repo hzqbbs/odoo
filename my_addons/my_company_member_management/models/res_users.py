@@ -19,7 +19,7 @@ class ResUsers(models.Model):
 
     @api.model
     def action_users_custom(self):
-        action = self.env.ref('my_auto_assign_sales_purchase.action_users_custom').read()[0]
+        action = self.env.ref('my_company_member_management.action_users_custom').read()[0]
         action['domain'] = self.get_custom_users_domain()
         return action
 
@@ -103,7 +103,7 @@ class ResUsers(models.Model):
         company = self.env['res.company'].create({'name': company_name})
 
         # 将用户添加到管理员组
-        admin_group = self.env.ref('my_auto_assign_sales_purchase.group_company_admin')
+        admin_group = self.env.ref('my_company_member_management.group_company_admin')
 
         # 查找临时公司
         temporary_company = self.env['res.company'].search([('name', '=', 'Temporary Company')], limit=1)
@@ -136,7 +136,7 @@ class ResUsers(models.Model):
     def join_company(self, company_id):
         company_admins = self.env['res.users'].search([
             ('company_id', '=', company_id),
-            ('groups_id', 'in', self.env.ref('my_auto_assign_sales_purchase.group_company_admin').id)
+            ('groups_id', 'in', self.env.ref('my_company_member_management.group_company_admin').id)
         ])
 
         if not company_admins:
@@ -151,7 +151,7 @@ class ResUsers(models.Model):
     def approve_member(self, approval_id):
         approval = self.env['company.member.approval'].browse(approval_id)
         if approval and approval.state == 'pending':
-            if not self.has_group('my_auto_assign_sales_purchase.group_company_admin'):
+            if not self.has_group('my_company_member_management.group_company_admin'):
                 raise UserError(_("You don't have the rights to approve this request."))
             if approval.company_id != self.company_id:
                 raise UserError(_("You can only approve requests for your own company."))

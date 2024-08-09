@@ -8,7 +8,7 @@ class MyCompany(http.Controller):
     @http.route('/company/select', type='http', auth='user', website=True)
     def company_select_form(self, **kw):
         companies = request.env['res.company'].sudo().search([])
-        return request.render('my_home_portal.company_select_form', {'companies': companies})
+        return request.render('my_company_member_management.company_select_form', {'companies': companies})
 
     @http.route('/company/select/submit', type='http', auth='user', methods=['POST'], website=True)
     def company_select_submit(self, **kw):

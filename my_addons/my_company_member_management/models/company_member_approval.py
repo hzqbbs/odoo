@@ -27,7 +27,7 @@ class CompanyMemberApproval(models.Model):
         self.ensure_one()
         if self.state != 'pending':
             raise UserError(_("You can only approve pending requests."))
-        if not self.env.user.has_group('my_auto_assign_sales_purchase.group_company_admin'):
+        if not self.env.user.has_group('my_company_member_management.group_company_admin'):
             raise UserError(_("You don't have the rights to approve this request."))
         if self.company_id != self.env.company:
             raise UserError(_("You can only approve requests for your own company."))
@@ -45,7 +45,7 @@ class CompanyMemberApproval(models.Model):
         self.ensure_one()
         if self.state != 'pending':
             raise UserError(_("You can only reject pending requests."))
-        if not self.env.user.has_group('my_auto_assign_sales_purchase.group_company_admin'):
+        if not self.env.user.has_group('my_company_member_management.group_company_admin'):
             raise UserError(_("You don't have the rights to reject this request."))
         if self.company_id != self.env.company:
             raise UserError(_("You can only reject requests for your own company."))
