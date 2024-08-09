@@ -15,6 +15,7 @@
         'security/ir.model.access.csv',
         'security/res_users_security.xml',
         'security/record_rules.xml',
+        'security/record_groups.xml',
     ],
     'installable': True,
     'application': False,

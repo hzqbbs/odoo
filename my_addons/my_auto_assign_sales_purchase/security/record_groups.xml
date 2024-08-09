@@ -1,0 +1,17 @@
+<odoo>
+    <data noupdate="1">
+        <!-- 创建一个新的权限类别 -->
+        <record id="module_category_company_management" model="ir.module.category">
+            <field name="name">Company Management</field>
+            <field name="description">Category for company management groups</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- 修改 group_company_admin 的定义 -->
+        <record id="group_company_admin" model="res.groups">
+            <field name="name">Company Admin</field>
+            <field name="category_id" ref="module_category_company_management"/>
+            <!-- 可以添加其他字段，如需要的话 -->
+        </record>
+    </data>
+</odoo>

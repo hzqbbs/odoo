@@ -1,4 +1,5 @@
-from odoo import http
+from odoo import http, _
+from odoo.exceptions import UserError
 from odoo.http import request
 
 
@@ -17,13 +18,11 @@ class MyCompany(http.Controller):
 
         if company_id:
             # 用户选择加入现有公司
-            existing_company = request.env['res.company'].sudo().browse(int(company_id))
-            user.sudo().write({'company_id': existing_company.id, 'company_ids': [(4, existing_company.id)]})
+            user.sudo().join_company(company_id=int(company_id))
         elif company_name:
             # 用户选择创建新公司
-            new_company = request.env['res.company'].sudo().create({
-                'name': company_name,
-            })
-            user.sudo().write({'company_id': new_company.id, 'company_ids': [(4, new_company.id)]})
+            user.sudo().create_and_join_company(company_name=company_name)
+        else:
+            raise UserError(_("Please provide either company_id or company_name."))
 
         return request.redirect('/my/home')

@@ -1,5 +1,7 @@
-from odoo import models, api, _, fields
+from odoo import models, api, _, fields, SUPERUSER_ID
 import logging
+
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -21,9 +23,24 @@ class ResUsers(models.Model):
         action['domain'] = self.get_custom_users_domain()
         return action
 
+    def write(self, vals):
+        if 'company_id' in vals or 'company_ids' in vals:
+            for user in self:
+                # 跳过对超级用户的检查
+                if user.id == SUPERUSER_ID:
+                    continue
+                # 检查是否有待审批的请求
+                pending_approval = self.env['company.member.approval'].search([
+                    ('user_id', '=', user.id),
+                    ('state', '=', 'pending')
+                ])
+                if pending_approval:
+                    # 如果有待审批的请求，阻止直接修改公司
+                    raise UserError(_("User %s cannot change company until the request is approved.") % user.name)
+        return super(ResUsers, self).write(vals)
+
     @api.model
     def create(self, vals):
-        _logger.info("Creating user with values: %s", vals)
 
         # 检查是否已有用户存在
         user_count = self.env['res.users'].search_count([])
@@ -39,7 +56,6 @@ class ResUsers(models.Model):
             temporary_company = self.env['res.company'].create({
                 'name': 'Temporary Company',
             })
-            _logger.info("Created temporary company: %s", temporary_company.name)
 
         # 分配临时公司
         vals['company_id'] = temporary_company.id
@@ -57,10 +73,7 @@ class ResUsers(models.Model):
 
         # 检查是否正确获取到组引用
         if not all([sales_group, purchase_group, internal_user_group, multi_company_group, settings_group]):
-            _logger.error("Failed to retrieve one or more groups")
             return user
-
-        _logger.info("Assigning groups to user: %s", user.name)
 
         # 移除所有用户类型组（以确保没有多个用户类型）
         user_types = self.env['res.groups'].search(
@@ -76,30 +89,80 @@ class ResUsers(models.Model):
             (4, settings_group.id),
         ]
 
-        _logger.info("User %s assigned to groups: %s", user.name, user.groups_id)
-
         return user
 
+    def create_and_join_company(self, company_name):
+        """
+        这个方法创建一个新公司，并将当前用户设置为管理员。
+
+        :param company_name: 新公司的名称。
+        """
+        self.ensure_one()  # 确保只处理一个用户
+
+        # 创建新公司
+        company = self.env['res.company'].create({'name': company_name})
+
+        # 将用户添加到管理员组
+        admin_group = self.env.ref('my_auto_assign_sales_purchase.group_company_admin')
+
+        # 查找临时公司
+        temporary_company = self.env['res.company'].search([('name', '=', 'Temporary Company')], limit=1)
+
+        # 添加更多必要的权限组
+        groups_to_add = [
+            self.env.ref('base.group_system'),  # 系统设置访问权限
+            self.env.ref('sales_team.group_sale_manager'),  # 销售管理权限
+            self.env.ref('website.group_website_designer'),  # 网站设计权限
+            admin_group
+        ]
+
+        # 更新用户信息
+        vals_to_write = {
+            'company_id': company.id,  # 设置新公司为主公司
+            'company_ids': [(4, company.id), (3, temporary_company.id)],  # 添加新公司，移除临时公司
+            'groups_id': [(4, group.id) for group in groups_to_add]
+        }
+
+        self.write(vals_to_write)
+
+        # 确保用户有多公司访问权限
+        self.env.ref('base.group_multi_company').users = [(4, self.id)]
+
+        # 刷新用户的访问权限
+        self.env['ir.actions.actions'].clear_caches()
+
+        return company
+
     def join_company(self, company_id):
+        company_admins = self.env['res.users'].search([
+            ('company_id', '=', company_id),
+            ('groups_id', 'in', self.env.ref('my_auto_assign_sales_purchase.group_company_admin').id)
+        ])
+
+        if not company_admins:
+            raise UserError(_("No admin found for this company. Cannot process join request."))
+
         self.env['company.member.approval'].create({
             'user_id': self.id,
             'company_id': company_id,
-            'state': 'pending'
+            'state': 'pending',
         })
-        # Send notification to admin for approval
-        admin_user = self.env['res.users'].search([('is_admin', '=', True)], limit=1)
-        if admin_user:
-            # 使用Odoo内部通知功能发送通知
-            admin_user.message_post(
-                subject=_("New Company Member Approval Request"),
-                body=_("A new member has requested to join your company. Please review the request."),
-                message_type='notification',
-                partner_ids=[admin_user.partner_id.id]
-            )
 
-    def approve_member(self, member_id):
-        approval = self.env['company.member.approval'].browse(member_id)
+    def approve_member(self, approval_id):
+        approval = self.env['company.member.approval'].browse(approval_id)
         if approval and approval.state == 'pending':
-            approval.state = 'approved'
-            approval.user_id.write({'company_id': approval.company_id.id})
-            approval.user_id.write({'company_ids': [(4, approval.company_id.id)]})
+            if not self.has_group('my_auto_assign_sales_purchase.group_company_admin'):
+                raise UserError(_("You don't have the rights to approve this request."))
+            if approval.company_id != self.company_id:
+                raise UserError(_("You can only approve requests for your own company."))
+
+            approval.write({
+                'state': 'approved',
+                'approved_by': self.id
+            })
+            approval.user_id.sudo().write({
+                'company_id': approval.company_id.id,
+                'company_ids': [(4, approval.company_id.id)]
+            })
+            # 发送通知给用户，告知其请求已被批准
+
