@@ -38,5 +38,12 @@
             <field name="domain_force">[('company_id', '=', user.company_id.id)]</field>
             <field name="groups" eval="[(4, ref('base.group_user'))]"/>
         </record>
+
+        <record id="allow_basic_data_access" model="ir.rule">
+            <field name="name">Allow Basic Data Access</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">['|', ('id', '=', 2), ('company_id', '=', user.company_id.id)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
     </data>
 </odoo>
